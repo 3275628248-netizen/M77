@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI智能助手</title>
+    <meta charset="utf-8">
+</head>
+<body>
+    <h1>AI智能助手</h1>
+    <div>
+        <h3>配置设置</h3>
+        <div>
+            <label>API密钥:</label>
+            <input type="password" id="apiKey" placeholder="输入DeepSeek API密钥">
+        </div>
+        <button onclick="saveConfig()">保存配置</button>
+    </div>
+    <div id="chatBox" style="height:300px; border:1px solid #ccc; padding:10px; overflow-y:scroll;"></div>
+    <div>
+        <textarea id="messageInput" placeholder="输入你的问题..." rows="3" style="width:100%;"></textarea>
+        <button onclick="sendMessage()">发送</button>
+    </div>
+
+    <script>
+        fetch('/api/config')
+            .then(r => r.json())
+            .then(config => {
+                document.getElementById('apiKey').value = config.api_key || '';
+            });
+
+        function saveConfig() {
+            const config = {
+                api_key: document.getElementById('apiKey').value,
+                model: "deepseek-chat"
+            };
+            
+            fetch('/api/config', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(config)
+            }).then(() => alert('配置已保存'));
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            const chatBox = document.getElementById('chatBox');
+            chatBox.innerHTML += '<div style="background:#e3f2fd; padding:10px; margin:5px; text-align:right;">' + message + '</div>';
+            input.value = '';
+            
+            fetch('/api/chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message: message})
+            })
+            .then(r => r.json())
+            .then(data => {
+                chatBox.innerHTML += '<div style="background:#f5f5f5; padding:10px; margin:5px;">' + data.response + '</div>';
+                chatBox.scrollTop = chatBox.scrollHeight;
+            });
+        }
+
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
